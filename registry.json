@@ -1,0 +1,60 @@
+{
+  "docker-compose": {
+    "type": "github",
+    "repo": "docker/compose",
+    "pattern": "docker-compose-${OS}-${ARCH_RAW}${EXE_EXT}",
+    "checksum_pattern": "docker-compose-${OS}-${ARCH_RAW}${EXE_EXT}.sha256"
+  },
+  "helm": {
+    "type": "github",
+    "repo": "helm/helm",
+    "pattern": "helm-${VERSION}-${OS}-${ARCH}.${ARCHIVE_EXT}",
+    "checksum_pattern": "helm-${VERSION}-${OS}-${ARCH}.${ARCHIVE_EXT}.sha256"
+  },
+  "k9s": {
+    "type": "github",
+    "repo": "derailed/k9s",
+    "pattern": "k9s_${OS_CAP}_${ARCH}.${ARCHIVE_EXT}",
+    "checksum_pattern": "checksums.sha256"
+  },
+  "kubectl": {
+    "type": "direct",
+    "url": "https://dl.k8s.io/release/${VERSION}/bin/${OS}/${ARCH}/kubectl${EXE_EXT}",
+    "latest_version_url": "https://dl.k8s.io/release/stable.txt",
+    "checksum_url": "https://dl.k8s.io/release/${VERSION}/bin/${OS}/${ARCH}/kubectl${EXE_EXT}.sha256",
+    "post_install": "echo 'Running kubectl hook...'; kubectl version --client"
+  },
+  "minikube": {
+    "type": "github",
+    "repo": "kubernetes/minikube",
+    "pattern": "minikube-${OS}-${ARCH}${EXE_EXT}",
+    "checksum_pattern": "minikube-${OS}-${ARCH}${EXE_EXT}.sha256"
+  },
+  "stern": {
+    "type": "github",
+    "repo": "stern/stern",
+    "pattern": "stern_${VERSION_NO_V}_${OS}_${ARCH}.${ARCHIVE_EXT}",
+    "checksum_pattern": "stern_${VERSION_NO_V}_checksums.txt"
+  },
+  "terraform": {
+    "type": "direct",
+    "url": "https://releases.hashicorp.com/terraform/${VERSION_NO_V}/terraform_${VERSION_NO_V}_${OS}_${ARCH}.zip",
+    "latest_version_url": "https://checkpoint-api.hashicorp.com/v1/check/terraform",
+    "latest_version_jq": ".current_version",
+    "checksum_url": "https://releases.hashicorp.com/terraform/${VERSION_NO_V}/terraform_${VERSION_NO_V}_SHA256SUMS",
+    "gpg_signature_pattern": "terraform_${VERSION_NO_V}_SHA256SUMS.sig",
+    "gpg_key_url": "https://www.hashicorp.com/.well-known/pgp-key.txt"
+  },
+  "tflint": {
+    "type": "github",
+    "repo": "terraform-linters/tflint",
+    "pattern": "tflint_${OS}_${ARCH}.zip",
+    "checksum_pattern": "checksums.txt"
+  },
+  "yq": {
+    "type": "github",
+    "repo": "mikefarah/yq",
+    "pattern": "yq_${OS}_${ARCH}${EXE_EXT}",
+    "checksum_pattern": "checksums"
+  }
+}
