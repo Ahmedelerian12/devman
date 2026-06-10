@@ -60,6 +60,40 @@ Make sure the following dependencies are installed on your host shell:
    eval "$(path/to/devman.sh completion zsh)"
    ```
 
+### Clone and Run in WSL
+
+Open your WSL terminal, then run:
+
+```bash
+sudo apt update
+sudo apt install -y git curl jq unzip tar gpg
+
+git clone https://github.com/Ahmedelerian12/devman.git
+cd devman
+chmod +x devman.sh
+
+./devman.sh learn roadmap
+```
+
+To run DevMan as `devman` from any WSL directory:
+
+```bash
+mkdir -p "$HOME/.local/bin"
+ln -sf "$PWD/devman.sh" "$HOME/.local/bin/devman"
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+source "$HOME/.bashrc"
+
+devman learn roadmap
+```
+
+If WSL is not installed yet, run this from PowerShell first:
+
+```powershell
+wsl --install
+```
+
+Then restart your machine if Windows asks, open the new Linux terminal, and run the WSL commands above.
+
 ---
 
 ## Usage Guide
