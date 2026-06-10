@@ -18,6 +18,7 @@ DEVMAN_DIR="${DEVMAN_DIR:-$HOME/.devman}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 CONFIG_DIR="$HOME/.config/devman"
 LOG_FILE="$DEVMAN_DIR/devman.log"
+LEARNING_PROGRESS_FILE="$DEVMAN_DIR/learning-progress.json"
 
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$DEVMAN_DIR/versions"
@@ -51,7 +52,7 @@ else
 fi
 
 # Check if INSTALL_DIR is in PATH (Warn only on stderr)
-if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* && "${1:-}" != "learn" && "${1:-}" != "completion" ]]; then
     echo -e "${YELLOW}Warning: $INSTALL_DIR is not in your PATH.${NC}" >&2
     echo "Add this to your ~/.bashrc or ~/.zshrc:" >&2
     echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >&2
@@ -155,6 +156,14 @@ check_prereqs() {
             exit 1
         fi
     done
+}
+
+check_jq_prereq() {
+    if ! command -v jq &> /dev/null; then
+        echo -e "${RED}Error: 'jq' is required for DevMan learning progress tracking.${NC}" >&2
+        echo "Install jq, or use learning commands that do not track progress: learn help, plan, lab, tools, or check." >&2
+        exit 1
+    fi
 }
 
 tool_exists() {
@@ -1328,6 +1337,1196 @@ EOF
 }
 
 # ==============================================================================
+# DEVOPS LEARNING AUTOMATION
+# ==============================================================================
+
+LEARNING_MODULES=(
+    linux
+    git
+    shell
+    docker
+    kubernetes
+    terraform
+    ansible
+    cicd
+    observability
+    security
+    cloud
+    capstone
+)
+
+learning_usage() {
+    echo "DevMan Learning Automation"
+    echo "Usage: devman learn <command> [args]"
+    echo ""
+    echo "Commands:"
+    echo "  roadmap                  Show the full DevOps learning path"
+    echo "  start [module]           Start a module, or the next unfinished module"
+    echo "  next                     Continue with the next unfinished module"
+    echo "  complete <module>        Mark a module as complete"
+    echo "  progress                 Show learning progress"
+    echo "  plan [days]              Generate a day-by-day study plan"
+    echo "  init [directory]         Create a full learning workspace"
+    echo "  lab <module> [directory] Create a runnable practice lab"
+    echo "  check [module]           Check local tool readiness"
+    echo "  tools                    Show tools used across the roadmap"
+    echo "  quiz [module]            Run a short interactive quiz"
+    echo "  reset [--yes]            Reset saved learning progress"
+    echo ""
+    echo "Modules:"
+    echo "  ${LEARNING_MODULES[*]}"
+}
+
+learning_module_title() {
+    case "$1" in
+        linux) echo "Linux and networking fundamentals" ;;
+        git) echo "Git workflows and collaboration" ;;
+        shell) echo "Shell scripting and automation" ;;
+        docker) echo "Containers with Docker and Compose" ;;
+        kubernetes) echo "Kubernetes application operations" ;;
+        terraform) echo "Infrastructure as Code with Terraform" ;;
+        ansible) echo "Configuration automation with Ansible" ;;
+        cicd) echo "CI/CD pipelines and release automation" ;;
+        observability) echo "Logs, metrics, tracing, and alerts" ;;
+        security) echo "DevSecOps supply chain and runtime security" ;;
+        cloud) echo "Cloud architecture and platform operations" ;;
+        capstone) echo "End-to-end DevOps platform capstone" ;;
+        *) echo "" ;;
+    esac
+}
+
+learning_module_goal() {
+    case "$1" in
+        linux) echo "Navigate Linux systems, inspect processes, understand ports, permissions, DNS, and basic troubleshooting." ;;
+        git) echo "Build safe branching, pull request, rollback, tagging, and release habits." ;;
+        shell) echo "Automate repeatable checks with portable Bash scripts and clear exit codes." ;;
+        docker) echo "Package an app into an image, run it locally, wire services with Compose, and debug containers." ;;
+        kubernetes) echo "Deploy, expose, inspect, scale, and troubleshoot workloads in a local cluster." ;;
+        terraform) echo "Model infrastructure declaratively, review plans, manage state, and structure reusable modules." ;;
+        ansible) echo "Write idempotent playbooks, manage inventories, template files, and apply configuration safely." ;;
+        cicd) echo "Create pipelines that test, scan, build, package, and publish changes with repeatable gates." ;;
+        observability) echo "Collect useful signals, query them, and connect alerts to action-oriented runbooks." ;;
+        security) echo "Add security checks to images, IaC, dependencies, secrets, and cluster policy." ;;
+        cloud) echo "Map DevOps practices to cloud networking, identity, compute, storage, and managed platforms." ;;
+        capstone) echo "Combine tools into a portfolio-grade workflow from source code to monitored deployment." ;;
+        *) echo "" ;;
+    esac
+}
+
+learning_module_tools() {
+    case "$1" in
+        linux) echo "bash curl jq" ;;
+        git) echo "git" ;;
+        shell) echo "bash curl jq" ;;
+        docker) echo "docker docker-compose" ;;
+        kubernetes) echo "kubectl minikube helm k9s yq" ;;
+        terraform) echo "terraform tflint yq jq" ;;
+        ansible) echo "ansible" ;;
+        cicd) echo "git docker" ;;
+        observability) echo "docker docker-compose kubectl stern" ;;
+        security) echo "docker kubectl terraform tflint" ;;
+        cloud) echo "terraform kubectl helm" ;;
+        capstone) echo "git docker docker-compose kubectl minikube helm terraform yq jq" ;;
+        *) echo "" ;;
+    esac
+}
+
+learning_module_challenge() {
+    case "$1" in
+        linux) echo "Use ps, ss/netstat, dig/nslookup, chmod, system logs, and curl to explain why a service is or is not reachable." ;;
+        git) echo "Create a feature branch, rebase or merge it cleanly, tag a release, and demonstrate a rollback path." ;;
+        shell) echo "Write a health-check script that validates tools, ports, files, and JSON output with useful failures." ;;
+        docker) echo "Build a small web image, run it with Compose, inspect logs, exec into it, and rebuild after a change." ;;
+        kubernetes) echo "Deploy an app, expose it, scale it, inspect events, roll out a change, and roll it back." ;;
+        terraform) echo "Create local infrastructure, run fmt/validate/plan/apply, inspect state, and destroy safely." ;;
+        ansible) echo "Apply a playbook to localhost, prove idempotency, and template a config file from variables." ;;
+        cicd) echo "Create a pipeline that runs lint, tests, image build, IaC validation, and artifact publishing steps." ;;
+        observability) echo "Collect metrics and logs for a sample app, build a minimal dashboard query, and write an alert runbook." ;;
+        security) echo "Find and fix one insecure Dockerfile pattern, one IaC issue, and one secret-handling problem." ;;
+        cloud) echo "Design a small cloud landing zone with network, identity, compute, storage, and operational guardrails." ;;
+        capstone) echo "Ship a complete sample service with CI, image build, IaC, Kubernetes deployment, and observability notes." ;;
+        *) echo "" ;;
+    esac
+}
+
+learning_module_valid() {
+    local module=$1
+    local known
+    for known in "${LEARNING_MODULES[@]}"; do
+        if [[ "$known" == "$module" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+learning_ensure_progress() {
+    check_jq_prereq
+
+    if [[ ! -f "$LEARNING_PROGRESS_FILE" ]]; then
+        local now
+        now=$(date '+%Y-%m-%d %H:%M:%S')
+        mkdir -p "$(dirname "$LEARNING_PROGRESS_FILE")"
+        cat << EOF > "$LEARNING_PROGRESS_FILE"
+{
+  "started_at": "$now",
+  "current": "",
+  "completed": [],
+  "completed_at": {},
+  "lab_root": ""
+}
+EOF
+    fi
+}
+
+learning_is_completed() {
+    local module=$1
+    [[ -f "$LEARNING_PROGRESS_FILE" ]] || return 1
+    command -v jq >/dev/null 2>&1 || return 1
+    jq -e --arg module "$module" '(.completed // []) | index($module)' "$LEARNING_PROGRESS_FILE" >/dev/null 2>&1
+}
+
+learning_next_module() {
+    local module
+    for module in "${LEARNING_MODULES[@]}"; do
+        if ! learning_is_completed "$module"; then
+            echo "$module"
+            return 0
+        fi
+    done
+    echo ""
+}
+
+learning_roadmap() {
+    local tracking_enabled=0
+    if command -v jq >/dev/null 2>&1; then
+        learning_ensure_progress
+        tracking_enabled=1
+    fi
+
+    echo -e "${GREEN}DevOps learning roadmap${NC}"
+    if [[ "$tracking_enabled" -eq 1 ]]; then
+        echo "Progress file: $LEARNING_PROGRESS_FILE"
+    else
+        echo -e "${YELLOW}Progress tracking disabled until jq is installed.${NC}"
+    fi
+    echo "--------------------------------------------------------------------------------"
+    printf "%-3s %-15s %-10s %s\n" "#" "MODULE" "STATUS" "GOAL"
+    echo "--------------------------------------------------------------------------------"
+
+    local idx=1
+    local module
+    for module in "${LEARNING_MODULES[@]}"; do
+        local status="todo"
+        if [[ "$tracking_enabled" -eq 0 ]]; then
+            status="unknown"
+        elif learning_is_completed "$module"; then
+            status="done"
+        fi
+        printf "%-3s %-15s %-10s %s\n" "$idx" "$module" "$status" "$(learning_module_title "$module")"
+        idx=$((idx + 1))
+    done
+    echo "--------------------------------------------------------------------------------"
+    echo "Run: devman learn start        # begin the next unfinished module"
+    echo "Run: devman learn lab docker   # create a focused practice lab"
+}
+
+learning_progress() {
+    learning_ensure_progress
+    local completed_count
+    completed_count=$(jq -r '(.completed // []) | length' "$LEARNING_PROGRESS_FILE")
+    local total=${#LEARNING_MODULES[@]}
+    local current
+    current=$(jq -r '.current // ""' "$LEARNING_PROGRESS_FILE")
+    local next
+    next=$(learning_next_module)
+
+    echo -e "${GREEN}Learning progress${NC}"
+    echo "Completed: $completed_count / $total"
+    if [[ -n "$current" ]]; then
+        echo "Current:   $current - $(learning_module_title "$current")"
+    else
+        echo "Current:   none"
+    fi
+    if [[ -n "$next" ]]; then
+        echo "Next:      $next - $(learning_module_title "$next")"
+    else
+        echo "Next:      all modules complete"
+    fi
+    echo ""
+    echo "Completed modules:"
+    if [[ "$completed_count" -eq 0 ]]; then
+        echo "  none yet"
+    else
+        jq -r '.completed[] | "  " + .' "$LEARNING_PROGRESS_FILE"
+    fi
+}
+
+learning_start() {
+    local module=${1:-}
+    learning_ensure_progress
+
+    if [[ -z "$module" || "$module" == "next" ]]; then
+        module=$(learning_next_module)
+    fi
+
+    if [[ -z "$module" ]]; then
+        echo -e "${GREEN}All learning modules are complete. Time for the capstone polish pass.${NC}"
+        return 0
+    fi
+
+    if ! learning_module_valid "$module"; then
+        echo -e "${RED}Error: Unknown learning module '$module'.${NC}" >&2
+        learning_usage
+        exit 1
+    fi
+
+    local now
+    now=$(date '+%Y-%m-%d %H:%M:%S')
+    local temp_file
+    temp_file=$(mktemp)
+    jq --arg module "$module" --arg ts "$now" \
+        '.current = $module | .last_started_at = $ts' \
+        "$LEARNING_PROGRESS_FILE" > "$temp_file"
+    mv "$temp_file" "$LEARNING_PROGRESS_FILE"
+
+    echo -e "${GREEN}Starting: $module - $(learning_module_title "$module")${NC}"
+    echo ""
+    echo "Goal:"
+    echo "  $(learning_module_goal "$module")"
+    echo ""
+    echo "Practice challenge:"
+    echo "  $(learning_module_challenge "$module")"
+    echo ""
+    echo "Recommended tools:"
+    echo "  $(learning_module_tools "$module")"
+    echo ""
+    echo "Suggested next commands:"
+    echo "  devman learn check $module"
+    echo "  devman learn lab $module"
+    echo "  devman learn quiz $module"
+    echo "  devman learn complete $module"
+}
+
+learning_complete() {
+    local module=$1
+    if [[ -z "$module" ]]; then
+        echo -e "${RED}Usage: devman learn complete <module>${NC}" >&2
+        exit 1
+    fi
+    if ! learning_module_valid "$module"; then
+        echo -e "${RED}Error: Unknown learning module '$module'.${NC}" >&2
+        exit 1
+    fi
+
+    learning_ensure_progress
+    local now
+    now=$(date '+%Y-%m-%d %H:%M:%S')
+    local temp_file
+    temp_file=$(mktemp)
+    jq --arg module "$module" --arg ts "$now" \
+        '.completed = (((.completed // []) + [$module]) | unique)
+         | .completed_at = ((.completed_at // {}) + {($module): $ts})
+         | if .current == $module then .current = "" else . end' \
+        "$LEARNING_PROGRESS_FILE" > "$temp_file"
+    mv "$temp_file" "$LEARNING_PROGRESS_FILE"
+
+    echo -e "${GREEN}Marked '$module' complete.${NC}"
+    log_message "Learning module completed: $module" "SUCCESS"
+    local next
+    next=$(learning_next_module)
+    if [[ -n "$next" ]]; then
+        echo "Next module: $next - $(learning_module_title "$next")"
+    else
+        echo "All modules complete. Nice work."
+    fi
+}
+
+learning_reset() {
+    local force=${1:-}
+    if [[ "$force" != "--yes" ]]; then
+        read -p "Reset DevMan learning progress? This only removes $LEARNING_PROGRESS_FILE. (y/N): " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Reset cancelled."
+            return 0
+        fi
+    fi
+
+    rm -f "$LEARNING_PROGRESS_FILE"
+    echo -e "${GREEN}Learning progress reset.${NC}"
+    log_message "Learning progress reset" "SUCCESS"
+}
+
+learning_plan() {
+    local days=${1:-30}
+    if ! [[ "$days" =~ ^[0-9]+$ ]] || [[ "$days" -lt 1 ]]; then
+        echo -e "${RED}Usage: devman learn plan [positive_days]${NC}" >&2
+        exit 1
+    fi
+
+    local total=${#LEARNING_MODULES[@]}
+    local module
+
+    echo -e "${GREEN}$days-day DevOps learning plan${NC}"
+    echo "--------------------------------------------------------------------------------"
+    printf "%-12s %-28s %s\n" "DAYS" "MODULE" "FOCUS"
+    echo "--------------------------------------------------------------------------------"
+
+    if [[ "$days" -lt "$total" ]]; then
+        local module_index=0
+        local day
+        for ((day = 1; day <= days; day++)); do
+            local remaining_modules=$((total - module_index))
+            local remaining_days=$((days - day + 1))
+            local group_size=$(( (remaining_modules + remaining_days - 1) / remaining_days ))
+            local group=""
+            local focus=""
+            local i
+
+            for ((i = 0; i < group_size && module_index < total; i++)); do
+                module="${LEARNING_MODULES[module_index]}"
+                if [[ -z "$group" ]]; then
+                    group="$module"
+                    focus="$(learning_module_title "$module")"
+                else
+                    group="$group,$module"
+                    focus="$focus; $(learning_module_title "$module")"
+                fi
+                module_index=$((module_index + 1))
+            done
+            printf "%-12s %-28s %s\n" "$day" "$group" "$focus"
+        done
+    else
+        local span=$(( (days + total - 1) / total ))
+        local start_day=1
+        local idx=1
+        for module in "${LEARNING_MODULES[@]}"; do
+            local end_day=$((start_day + span - 1))
+            if [[ "$end_day" -gt "$days" || "$idx" -eq "$total" ]]; then
+                end_day=$days
+            fi
+            printf "%-12s %-28s %s\n" "$start_day-$end_day" "$module" "$(learning_module_title "$module")"
+            start_day=$((end_day + 1))
+            idx=$((idx + 1))
+            if [[ "$start_day" -gt "$days" ]]; then
+                break
+            fi
+        done
+    fi
+    echo "--------------------------------------------------------------------------------"
+    echo "Daily rhythm: read 20m, build 60m, troubleshoot 20m, write notes 10m."
+    echo "Weekly rhythm: redo one lab from memory and explain it in your notes."
+}
+
+learning_write_file_allowed() {
+    local file=$1
+    mkdir -p "$(dirname "$file")"
+    if [[ -e "$file" ]]; then
+        echo -e "${YELLOW}Keeping existing file: $file${NC}"
+        return 1
+    fi
+    return 0
+}
+
+learning_init_workspace() {
+    local root=${1:-devops-learning-lab}
+    mkdir -p "$root/labs" "$root/notes" "$root/scripts"
+
+    local module
+    for module in "${LEARNING_MODULES[@]}"; do
+        mkdir -p "$root/labs/$module"
+    done
+
+    if learning_write_file_allowed "$root/README.md"; then
+        cat << 'LABEOF' > "$root/README.md"
+# DevOps Learning Lab
+
+This workspace was generated by DevMan.
+
+## Flow
+
+1. Run `devman learn roadmap`.
+2. Run `devman learn start`.
+3. Generate the current module lab with `devman learn lab <module> labs/<module>`.
+4. Capture notes in `notes/`.
+5. Run `devman learn quiz <module>`.
+6. Mark completion with `devman learn complete <module>`.
+
+## Portfolio rule
+
+Every module should leave behind a small artifact: a script, manifest, pipeline,
+runbook, diagram, or README explaining what you built and how you debugged it.
+LABEOF
+    fi
+
+    if learning_write_file_allowed "$root/notes/learning-journal.md"; then
+        cat << 'LABEOF' > "$root/notes/learning-journal.md"
+# Learning Journal
+
+## Today
+
+- Module:
+- What I built:
+- What failed:
+- How I fixed it:
+- Command I want to remember:
+- Next improvement:
+LABEOF
+    fi
+
+    if learning_write_file_allowed "$root/Makefile"; then
+        cat << 'LABEOF' > "$root/Makefile"
+.PHONY: roadmap progress check next
+
+roadmap:
+	devman learn roadmap
+
+progress:
+	devman learn progress
+
+check:
+	devman learn check
+
+next:
+	devman learn start
+LABEOF
+    fi
+
+    if command -v jq >/dev/null 2>&1; then
+        learning_ensure_progress
+        local temp_file
+        temp_file=$(mktemp)
+        jq --arg root "$root" '.lab_root = $root' "$LEARNING_PROGRESS_FILE" > "$temp_file"
+        mv "$temp_file" "$LEARNING_PROGRESS_FILE"
+    else
+        echo -e "${YELLOW}Progress file not updated because jq is not installed.${NC}"
+    fi
+
+    echo -e "${GREEN}Created DevOps learning workspace at: $root${NC}"
+    echo "Next: cd $root && devman learn start"
+    log_message "Initialized learning workspace at $root" "SUCCESS"
+}
+
+learning_create_lab() {
+    local module=$1
+    local lab_dir=${2:-}
+
+    if [[ -z "$module" ]]; then
+        echo -e "${RED}Usage: devman learn lab <module> [directory]${NC}" >&2
+        exit 1
+    fi
+    if ! learning_module_valid "$module"; then
+        echo -e "${RED}Error: Unknown learning module '$module'.${NC}" >&2
+        exit 1
+    fi
+
+    if [[ -z "$lab_dir" ]]; then
+        lab_dir="devman-lab-$module"
+    fi
+    mkdir -p "$lab_dir"
+
+    case "$module" in
+        linux)
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Linux and Networking Lab
+
+## Tasks
+
+- Print OS, kernel, current shell, disk usage, and memory usage.
+- Find the process using a port.
+- Resolve a domain name and curl a health endpoint.
+- Create a file, change permissions, and explain the permission bits.
+- Write a short troubleshooting note for a failed service.
+
+## Useful commands
+
+`uname -a`, `df -h`, `free -m`, `ps aux`, `ss -tulpn`, `curl -I`, `chmod`, `journalctl`
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/system-check.sh"; then
+                cat << 'LABEOF' > "$lab_dir/system-check.sh"
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "OS: $(uname -s)"
+echo "Kernel: $(uname -r)"
+echo "Shell: ${SHELL:-unknown}"
+echo "Disk:"
+df -h .
+echo "Network:"
+curl -I -L --max-time 10 https://example.com
+LABEOF
+                chmod +x "$lab_dir/system-check.sh"
+            fi
+            ;;
+        git)
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Git Workflow Lab
+
+## Tasks
+
+- Initialize a repository.
+- Create a feature branch and make two commits.
+- Rebase or merge back to the main branch.
+- Create an annotated tag.
+- Practice a safe rollback with `git revert`.
+
+## Evidence to capture
+
+- `git log --oneline --graph --decorate --all`
+- A short note explaining merge vs rebase.
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/.gitignore"; then
+                cat << 'LABEOF' > "$lab_dir/.gitignore"
+.env
+*.log
+tmp/
+LABEOF
+            fi
+            ;;
+        shell)
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Shell Automation Lab
+
+## Tasks
+
+- Validate that required commands exist.
+- Parse JSON with jq.
+- Return non-zero when a check fails.
+- Log useful status messages.
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/devops-health.sh"; then
+                cat << 'LABEOF' > "$lab_dir/devops-health.sh"
+#!/usr/bin/env bash
+set -euo pipefail
+
+required=(git curl jq)
+missing=0
+
+for cmd in "${required[@]}"; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        echo "ok: $cmd"
+    else
+        echo "missing: $cmd" >&2
+        missing=1
+    fi
+done
+
+echo '{"status":"ok","source":"devman"}' | jq -r '.status'
+exit "$missing"
+LABEOF
+                chmod +x "$lab_dir/devops-health.sh"
+            fi
+            ;;
+        docker)
+            mkdir -p "$lab_dir/app"
+            if learning_write_file_allowed "$lab_dir/app/index.html"; then
+                cat << 'LABEOF' > "$lab_dir/app/index.html"
+<h1>Hello from the DevMan Docker lab</h1>
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/Dockerfile"; then
+                cat << 'LABEOF' > "$lab_dir/Dockerfile"
+FROM nginx:alpine
+COPY app/ /usr/share/nginx/html/
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost/ || exit 1
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/compose.yaml"; then
+                cat << 'LABEOF' > "$lab_dir/compose.yaml"
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Docker Lab
+
+Run:
+
+```bash
+docker build -t devman-web:learn .
+docker run --rm -p 8080:80 devman-web:learn
+docker compose up --build
+```
+
+Practice: inspect logs, exec into the container, rebuild after changing `app/index.html`.
+LABEOF
+            fi
+            ;;
+        kubernetes)
+            mkdir -p "$lab_dir/k8s"
+            if learning_write_file_allowed "$lab_dir/k8s/deployment.yaml"; then
+                cat << 'LABEOF' > "$lab_dir/k8s/deployment.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devman-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devman-web
+  template:
+    metadata:
+      labels:
+        app: devman-web
+    spec:
+      containers:
+        - name: web
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/k8s/service.yaml"; then
+                cat << 'LABEOF' > "$lab_dir/k8s/service.yaml"
+apiVersion: v1
+kind: Service
+metadata:
+  name: devman-web
+spec:
+  selector:
+    app: devman-web
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Kubernetes Lab
+
+Run:
+
+```bash
+minikube start
+kubectl apply -f k8s/
+kubectl get deploy,svc,pods
+kubectl rollout restart deployment/devman-web
+kubectl rollout status deployment/devman-web
+kubectl port-forward service/devman-web 8080:80
+```
+
+Practice: scale replicas, inspect events, break the image tag, and recover.
+LABEOF
+            fi
+            ;;
+        terraform)
+            if learning_write_file_allowed "$lab_dir/main.tf"; then
+                cat << 'LABEOF' > "$lab_dir/main.tf"
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+  }
+}
+
+variable "environment" {
+  type    = string
+  default = "learning"
+}
+
+resource "local_file" "runbook" {
+  filename = "${path.module}/runbook-${var.environment}.md"
+  content  = "# ${var.environment} runbook\n\nGenerated by Terraform.\n"
+}
+
+output "runbook_path" {
+  value = local_file.runbook.filename
+}
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Terraform Lab
+
+Run:
+
+```bash
+terraform init
+terraform fmt
+terraform validate
+terraform plan
+terraform apply
+terraform state list
+terraform destroy
+```
+
+Practice: change the variable, review the plan, apply, and inspect state.
+LABEOF
+            fi
+            ;;
+        ansible)
+            if learning_write_file_allowed "$lab_dir/inventory.ini"; then
+                cat << 'LABEOF' > "$lab_dir/inventory.ini"
+[local]
+localhost ansible_connection=local
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/playbook.yml"; then
+                cat << 'LABEOF' > "$lab_dir/playbook.yml"
+---
+- name: DevMan Ansible learning lab
+  hosts: local
+  gather_facts: true
+  vars:
+    lab_message: "Configured by Ansible"
+  tasks:
+    - name: Write a local config artifact
+      copy:
+        dest: ./ansible-lab-output.txt
+        content: "{{ lab_message }} on {{ ansible_date_time.date }}\n"
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# Ansible Lab
+
+Run:
+
+```bash
+ansible-playbook -i inventory.ini playbook.yml
+ansible-playbook -i inventory.ini playbook.yml
+```
+
+Practice: prove the second run is idempotent and add a templated file.
+LABEOF
+            fi
+            ;;
+        cicd)
+            mkdir -p "$lab_dir/.github/workflows"
+            if learning_write_file_allowed "$lab_dir/.github/workflows/devops-ci.yml"; then
+                cat << 'LABEOF' > "$lab_dir/.github/workflows/devops-ci.yml"
+name: DevOps CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax check
+        run: |
+          find . -name "*.sh" -print0 | xargs -0 -r bash -n
+      - name: Dockerfile lint placeholder
+        run: |
+          test -f Dockerfile && echo "Add hadolint here" || echo "No Dockerfile yet"
+      - name: Terraform validation placeholder
+        run: |
+          test -f main.tf && echo "Add terraform init/validate here" || echo "No Terraform yet"
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# CI/CD Lab
+
+Tasks:
+
+- Add unit/lint/test stages for your project.
+- Add Docker image build steps.
+- Add Terraform validation.
+- Add branch protection notes.
+- Explain what must pass before deployment.
+LABEOF
+            fi
+            ;;
+        observability)
+            if learning_write_file_allowed "$lab_dir/prometheus.yml"; then
+                cat << 'LABEOF' > "$lab_dir/prometheus.yml"
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/compose.yaml"; then
+                cat << 'LABEOF' > "$lab_dir/compose.yaml"
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/runbook.md"; then
+                cat << 'LABEOF' > "$lab_dir/runbook.md"
+# Alert Runbook Template
+
+## Symptom
+
+## User impact
+
+## First checks
+
+## Likely causes
+
+## Recovery steps
+
+## Prevention
+LABEOF
+            fi
+            ;;
+        security)
+            if learning_write_file_allowed "$lab_dir/Dockerfile.insecure"; then
+                cat << 'LABEOF' > "$lab_dir/Dockerfile.insecure"
+FROM ubuntu:latest
+USER root
+COPY . /app
+RUN chmod -R 777 /app
+CMD ["bash"]
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/security-review.md"; then
+                cat << 'LABEOF' > "$lab_dir/security-review.md"
+# Security Review
+
+Find and fix:
+
+- Floating base image tag.
+- Root runtime user.
+- Over-broad permissions.
+- Missing dependency scan.
+- Missing secret handling rules.
+
+Write the corrected Dockerfile and explain each change.
+LABEOF
+            fi
+            ;;
+        cloud)
+            if learning_write_file_allowed "$lab_dir/cloud-design.md"; then
+                cat << 'LABEOF' > "$lab_dir/cloud-design.md"
+# Cloud DevOps Design Lab
+
+Design a small production-like environment.
+
+## Include
+
+- Network boundaries and subnets.
+- Identity and access model.
+- Compute/runtime choice.
+- Storage and backup strategy.
+- Deployment path.
+- Monitoring and incident response.
+- Cost controls.
+
+Keep it cloud-agnostic first, then map it to AWS, Azure, or GCP.
+LABEOF
+            fi
+            ;;
+        capstone)
+            mkdir -p "$lab_dir/app" "$lab_dir/k8s" "$lab_dir/.github/workflows" "$lab_dir/docs"
+            if learning_write_file_allowed "$lab_dir/app/index.html"; then
+                cat << 'LABEOF' > "$lab_dir/app/index.html"
+<h1>DevMan Capstone Service</h1>
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/Dockerfile"; then
+                cat << 'LABEOF' > "$lab_dir/Dockerfile"
+FROM nginx:alpine
+COPY app/ /usr/share/nginx/html/
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/k8s/deployment.yaml"; then
+                cat << 'LABEOF' > "$lab_dir/k8s/deployment.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: capstone-web
+  template:
+    metadata:
+      labels:
+        app: capstone-web
+    spec:
+      containers:
+        - name: web
+          image: capstone-web:local
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/docs/runbook.md"; then
+                cat << 'LABEOF' > "$lab_dir/docs/runbook.md"
+# Capstone Runbook
+
+## Deploy
+
+## Verify
+
+## Roll back
+
+## Troubleshoot
+
+## Improve
+LABEOF
+            fi
+            if learning_write_file_allowed "$lab_dir/README.md"; then
+                cat << 'LABEOF' > "$lab_dir/README.md"
+# DevOps Capstone
+
+Build the image, run it locally, deploy it to Kubernetes, add CI validation,
+write a runbook, and document the architecture.
+LABEOF
+            fi
+            ;;
+    esac
+
+    echo -e "${GREEN}Created $module lab at: $lab_dir${NC}"
+    echo "Open the README or generated files there, then run: devman learn start $module"
+    log_message "Created learning lab '$module' at $lab_dir" "SUCCESS"
+}
+
+learning_check() {
+    local module=${1:-all}
+    local tools=""
+
+    if [[ "$module" == "all" ]]; then
+        local seen=" "
+        local known
+        for known in "${LEARNING_MODULES[@]}"; do
+            local cmd
+            for cmd in $(learning_module_tools "$known"); do
+                if [[ "$seen" != *" $cmd "* ]]; then
+                    seen="$seen$cmd "
+                    tools="$tools $cmd"
+                fi
+            done
+        done
+    else
+        if ! learning_module_valid "$module"; then
+            echo -e "${RED}Error: Unknown learning module '$module'.${NC}" >&2
+            exit 1
+        fi
+        tools=$(learning_module_tools "$module")
+    fi
+
+    echo -e "${GREEN}Tool readiness check: $module${NC}"
+    echo "------------------------------------------------------------"
+    printf "%-18s %-12s %s\n" "TOOL" "STATUS" "NEXT STEP"
+    echo "------------------------------------------------------------"
+
+    local missing=0
+    local cmd
+    for cmd in $tools; do
+        if command -v "$cmd" >/dev/null 2>&1; then
+            printf "%-18s %-12s %s\n" "$cmd" "ok" "$(command -v "$cmd")"
+        else
+            missing=$((missing + 1))
+            local hint="install externally"
+            if command -v jq >/dev/null 2>&1 && tool_exists "$cmd"; then
+                hint="devman install $cmd latest"
+            fi
+            printf "%-18s %-12s %s\n" "$cmd" "missing" "$hint"
+        fi
+    done
+    echo "------------------------------------------------------------"
+    if [[ "$missing" -eq 0 ]]; then
+        echo -e "${GREEN}All checked tools are available.${NC}"
+    else
+        echo -e "${YELLOW}$missing tool(s) missing. Install only what you need for the current module.${NC}"
+    fi
+}
+
+learning_tools() {
+    echo -e "${GREEN}DevOps learning tool map${NC}"
+    echo "--------------------------------------------------------------------------------"
+    printf "%-15s %s\n" "MODULE" "TOOLS"
+    echo "--------------------------------------------------------------------------------"
+    local module
+    for module in "${LEARNING_MODULES[@]}"; do
+        printf "%-15s %s\n" "$module" "$(learning_module_tools "$module")"
+    done
+    echo "--------------------------------------------------------------------------------"
+    echo "DevMan can install registry tools with: devman install <tool> latest"
+    echo "External tools such as git, docker, ansible, and cloud CLIs may need OS-specific setup."
+}
+
+learning_quiz() {
+    local module=${1:-}
+    if [[ -z "$module" ]]; then
+        module=$(learning_next_module)
+    fi
+    if [[ -z "$module" ]]; then
+        module="capstone"
+    fi
+    if ! learning_module_valid "$module"; then
+        echo -e "${RED}Error: Unknown learning module '$module'.${NC}" >&2
+        exit 1
+    fi
+
+    local q1 q2 q3 a1 a2 a3
+    case "$module" in
+        linux)
+            q1="Which command is best for checking listening TCP ports? a) chmod b) ss c) mkdir"; a1="b"
+            q2="What does exit code 0 usually mean? a) success b) warning c) failure"; a2="a"
+            q3="Which record type maps a name to an IPv4 address? a) MX b) A c) TXT"; a3="b"
+            ;;
+        git)
+            q1="Which command creates an annotated release marker? a) git tag -a b) git stash c) git fetch"; a1="a"
+            q2="Which command safely undoes a committed change by adding a new commit? a) git revert b) git reset --hard c) git clean"; a2="a"
+            q3="What is a pull request mainly for? a) code review and merge discussion b) deleting branches c) installing packages"; a3="a"
+            ;;
+        shell)
+            q1="What does 'set -euo pipefail' improve? a) script safety b) color output c) network speed"; a1="a"
+            q2="Which tool is best for JSON parsing in shell scripts? a) jq b) tar c) ssh-keygen"; a2="a"
+            q3="Where should error messages usually go? a) stderr b) /dev/null always c) only README files"; a3="a"
+            ;;
+        docker)
+            q1="Which file usually defines image build steps? a) Dockerfile b) deployment.yaml c) main.tf"; a1="a"
+            q2="What does a container image contain? a) packaged filesystem and metadata b) only source code c) only logs"; a2="a"
+            q3="Which command shows container logs? a) docker logs b) git log c) terraform show"; a3="a"
+            ;;
+        kubernetes)
+            q1="Which object keeps pods running at a desired replica count? a) Deployment b) Secret c) Namespace"; a1="a"
+            q2="Which command shows recent cluster scheduling issues? a) kubectl get events b) docker build c) git tag"; a2="a"
+            q3="Which Service type is commonly used for internal-only access? a) ClusterIP b) NodeName c) Dockerfile"; a3="a"
+            ;;
+        terraform)
+            q1="Which command previews infrastructure changes? a) terraform plan b) terraform fmt c) terraform output"; a1="a"
+            q2="What does Terraform state track? a) managed resource mappings b) shell aliases c) Git branches"; a2="a"
+            q3="Which file commonly stores reusable input definitions? a) variables.tf b) Dockerfile c) inventory.ini"; a3="a"
+            ;;
+        ansible)
+            q1="What does idempotent mean? a) repeated runs converge safely b) every run must fail once c) no variables allowed"; a1="a"
+            q2="Which file lists target hosts? a) inventory b) Dockerfile c) state file"; a2="a"
+            q3="Which format are playbooks usually written in? a) YAML b) PNG c) ZIP"; a3="a"
+            ;;
+        cicd)
+            q1="What is a pipeline gate? a) required check before promotion b) a Kubernetes pod c) a shell prompt"; a1="a"
+            q2="Which event often triggers CI? a) push or pull request b) disk mount c) DNS lookup"; a2="a"
+            q3="What should a deployment pipeline be? a) repeatable and auditable b) manual only c) hidden from logs"; a3="a"
+            ;;
+        observability)
+            q1="What are the three common signals? a) logs metrics traces b) tags branches commits c) images layers ports"; a1="a"
+            q2="What should an alert include? a) action and impact b) only a vague title c) no owner"; a2="a"
+            q3="What is a runbook for? a) repeatable incident response b) package installation only c) hiding errors"; a3="a"
+            ;;
+        security)
+            q1="Why avoid running containers as root? a) reduces blast radius b) makes images larger c) disables logs"; a1="a"
+            q2="Where should secrets not be committed? a) source control b) a secret manager c) environment-specific vault"; a2="a"
+            q3="What is supply chain scanning for? a) dependency and image risk b) changing DNS records c) creating branches"; a3="a"
+            ;;
+        cloud)
+            q1="What is least privilege? a) only needed access b) admin for everyone c) public buckets by default"; a1="a"
+            q2="What should be tagged for cost control? a) cloud resources b) shell variables only c) Git commits only"; a2="a"
+            q3="What belongs in a landing zone? a) network identity guardrails b) laptop wallpaper c) only app code"; a3="a"
+            ;;
+        capstone)
+            q1="What makes a capstone strong? a) integrated working workflow b) screenshots only c) no README"; a1="a"
+            q2="What should rollback notes describe? a) how to return to a known good version b) how to delete history c) how to ignore alerts"; a2="a"
+            q3="What should the portfolio README explain? a) architecture, commands, tradeoffs b) private secrets c) unrelated tasks"; a3="a"
+            ;;
+    esac
+
+    echo -e "${GREEN}Quiz: $module - $(learning_module_title "$module")${NC}"
+    local score=0
+    local answer
+
+    echo "1) $q1"
+    if ! read -r -p "Answer: " answer; then answer=""; fi
+    if [[ "${answer,,}" == "$a1" ]]; then score=$((score + 1)); fi
+
+    echo "2) $q2"
+    if ! read -r -p "Answer: " answer; then answer=""; fi
+    if [[ "${answer,,}" == "$a2" ]]; then score=$((score + 1)); fi
+
+    echo "3) $q3"
+    if ! read -r -p "Answer: " answer; then answer=""; fi
+    if [[ "${answer,,}" == "$a3" ]]; then score=$((score + 1)); fi
+
+    echo "Score: $score / 3"
+    if [[ "$score" -eq 3 ]]; then
+        echo -e "${GREEN}Passed. You can mark it complete with: devman learn complete $module${NC}"
+    else
+        echo -e "${YELLOW}Review the module goal and redo the lab before marking it complete.${NC}"
+        echo "Answer key: 1=$a1 2=$a2 3=$a3"
+    fi
+}
+
+learning_dispatch() {
+    local command=${1:-help}
+    shift || true
+
+    case "$command" in
+        roadmap|list)
+            learning_roadmap
+            ;;
+        start)
+            learning_start "${1:-}"
+            ;;
+        next)
+            learning_start "next"
+            ;;
+        complete|done)
+            learning_complete "${1:-}"
+            ;;
+        progress|status)
+            learning_progress
+            ;;
+        plan)
+            learning_plan "${1:-30}"
+            ;;
+        init)
+            learning_init_workspace "${1:-devops-learning-lab}"
+            ;;
+        lab|scaffold)
+            learning_create_lab "${1:-}" "${2:-}"
+            ;;
+        check|doctor)
+            learning_check "${1:-all}"
+            ;;
+        tools)
+            learning_tools
+            ;;
+        quiz)
+            learning_quiz "${1:-}"
+            ;;
+        reset)
+            learning_reset "${1:-}"
+            ;;
+        help|-h|--help)
+            learning_usage
+            ;;
+        *)
+            echo -e "${RED}Error: Unknown learn command '$command'.${NC}" >&2
+            learning_usage
+            exit 1
+            ;;
+    esac
+}
+
+# ==============================================================================
 # KEYBOARD-DRIVEN TUI DASHBOARD
 # ==============================================================================
 
@@ -1546,6 +2745,10 @@ case "$1" in
         check_prereqs
         import_lockfile "$2"
         ;;
+    learn)
+        shift
+        learning_dispatch "$@"
+        ;;
     tui)
         check_prereqs
         interactive_tui
@@ -1562,7 +2765,7 @@ _devman_completions() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     
-    opts="list install install-all use uninstall versions bootstrap logs registry prune completion auto-switch run check-updates upgrade export import tui"
+    opts="list install install-all use uninstall versions bootstrap logs registry prune completion auto-switch run check-updates upgrade export import learn tui"
     
     if [[ ${COMP_CWORD} -eq 1 ]]; then
         COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
@@ -1587,6 +2790,14 @@ _devman_completions() {
             ;;
         registry)
             COMPREPLY=( $(compgen -W "add remove sync" -- ${cur}) )
+            return 0
+            ;;
+        learn)
+            COMPREPLY=( $(compgen -W "roadmap start next complete progress plan init lab check tools quiz reset help" -- ${cur}) )
+            return 0
+            ;;
+        start|complete|done|lab|scaffold|check|doctor|quiz)
+            COMPREPLY=( $(compgen -W "linux git shell docker kubernetes terraform ansible cicd observability security cloud capstone" -- ${cur}) )
             return 0
             ;;
         completion)
@@ -1636,11 +2847,13 @@ EOF
             interactive_tui
         else
             echo "DevMan - Unified DevOps Tool Manager (v4 Premium)"
-            echo "Usage: $0 {list|install <tool> [version]|install-all|use <tool> <version>|versions <tool>|uninstall <tool> [version]|bootstrap <type>|logs|prune|registry {add|remove|sync}|completion <bash|zsh>|auto-switch [--silent]|run <tool>@<version> <args>|check-updates|upgrade [tool]|export [file]|import [file]|tui}"
+            echo "Usage: $0 {list|install <tool> [version]|install-all|use <tool> <version>|versions <tool>|uninstall <tool> [version]|bootstrap <type>|logs|prune|registry {add|remove|sync}|completion <bash|zsh>|auto-switch [--silent]|run <tool>@<version> <args>|check-updates|upgrade [tool]|export [file]|import [file]|learn <command>|tui}"
             echo ""
             echo "Examples:"
             echo "  $0                              # Launches interactive TUI dashboard"
             echo "  $0 run terraform@1.5.0 version  # Ad-hoc runner without linking version"
+            echo "  $0 learn roadmap                # Shows the automated DevOps learning path"
+            echo "  $0 learn lab docker             # Creates a Docker practice lab"
             echo "  $0 check-updates                # Lists tools with pending updates"
             echo "  $0 upgrade                      # Upgrades all installed tools"
             echo "  $0 export devman.lock           # Locks environment version settings"
