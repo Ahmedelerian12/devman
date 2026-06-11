@@ -109,7 +109,7 @@ devman
 The dashboard includes:
 
 * **Tool manager** - install latest/specific versions, switch active versions, inspect installed versions, or uninstall cached versions.
-* **Learning hub** - open the roadmap, start modules, create labs, run readiness checks, take quizzes, and generate study plans.
+* **Learning hub** - open the roadmap, start guided module missions, create labs, run readiness checks, take randomized quizzes, and generate study plans.
 * **Bootstrap samples** - create Terraform, Kubernetes, or Docker Compose starter files.
 * **Maintenance** - list tools, check updates, upgrade active tools, export/import lockfiles, prune cache, manage the registry, and view logs.
 * **System status** - inspect DevMan paths, prerequisites, PATH setup, active tools, and learning progress.
@@ -135,11 +135,11 @@ Automate a complete DevOps learning path without leaving the terminal:
 | Command | Description | Example |
 | :--- | :--- | :--- |
 | `learn roadmap` | Show the module roadmap and completion status | `devman learn roadmap` |
-| `learn start [module]` | Start a module or the next unfinished module | `devman learn start docker` |
+| `learn start [module]` | Start a guided module mission with steps and checkpoints | `devman learn start docker` |
 | `learn next` | Continue with the next unfinished module | `devman learn next` |
 | `learn lab <module>` | Generate a hands-on practice lab | `devman learn lab kubernetes` |
 | `learn check [module]` | Check required local tools and install hints | `devman learn check terraform` |
-| `learn quiz [module]` | Run a short interactive knowledge check | `devman learn quiz docker` |
+| `learn quiz [module] [count]` | Run a randomized interactive knowledge check | `devman learn quiz docker 5` |
 | `learn complete <module>` | Mark a module complete | `devman learn complete docker` |
 | `learn progress` | Show current and completed modules | `devman learn progress` |
 | `learn plan [days]` | Generate a paced study plan | `devman learn plan 45` |
@@ -153,6 +153,8 @@ linux -> git -> shell -> docker -> kubernetes -> terraform -> ansible
 ```
 
 Progress is stored at `~/.devman/learning-progress.json`. Generated labs are starter templates; run the commands inside each lab only when your local tools are ready.
+
+Each `learn start` module prints a mission-style guide with a goal, challenge, recommended tools, step-by-step instructions, a checkpoint, and suggested next commands. Quizzes pull random questions from a larger module bank and give immediate feedback, so repeating a quiz is useful practice instead of memorizing a fixed set.
 
 ### 4. Workspace Lockfiles
 
