@@ -303,7 +303,11 @@ _devman_completions() {
             return 0
             ;;
         learn)
-            COMPREPLY=( $(compgen -W "roadmap start next complete progress activity plan init lab validate project check tools quiz reset help" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "roadmap start next complete progress activity plan init lab validate cheatsheet project check tools quiz reset help" -- ${cur}) )
+            return 0
+            ;;
+        cheatsheet|cheat|cs)
+            COMPREPLY=( $(compgen -W "current flow all linux git shell docker kubernetes terraform ansible cicd observability security cloud capstone" -- ${cur}) )
             return 0
             ;;
         start|complete|done|lab|scaffold|validate|check|doctor|quiz)
@@ -364,6 +368,7 @@ EOF
             echo "  $0 run terraform@1.5.0 version  # Ad-hoc runner without linking version"
             echo "  $0 learn roadmap                # Shows the automated DevOps learning path"
             echo "  $0 learn lab docker             # Creates a Docker practice lab"
+            echo "  $0 learn cheatsheet docker      # Shows step-by-step Docker help"
             echo "  $0 learn validate docker        # Validates lab files and tools"
             echo "  $0 check-updates                # Lists tools with pending updates"
             echo "  $0 upgrade                      # Upgrades all installed tools"

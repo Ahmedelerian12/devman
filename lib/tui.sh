@@ -469,6 +469,7 @@ tui_learning_menu() {
             "Roadmap"
             "Progress"
             "Resume current mission"
+            "Cheat sheet"
             "Start next module"
             "Start selected module"
             "Create lab"
@@ -486,6 +487,7 @@ tui_learning_menu() {
             "View the complete DevOps path"
             "Show XP, streaks, badges, and modules"
             "Open the saved current module"
+            "Show step-by-step commands for a module"
             "Continue from saved progress"
             "Pick a module from the roadmap"
             "Generate practice files"
@@ -513,6 +515,11 @@ tui_learning_menu() {
                 ;;
             "Resume current mission")
                 tui_run_action "Resume Mission" learning_start "next"
+                ;;
+            "Cheat sheet")
+                if tui_choose_learning_module "Cheat Sheet"; then
+                    tui_run_action "Cheat Sheet: $TUI_MODULE" learning_cheatsheet "$TUI_MODULE"
+                fi
                 ;;
             "Start next module")
                 tui_run_action "Start Next Module" learning_start "next"

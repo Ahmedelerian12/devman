@@ -147,6 +147,7 @@ Automate a complete DevOps learning path without leaving the terminal:
 | `learn next` | Continue with the next unfinished module | `devman learn next` |
 | `learn lab <module>` | Generate a hands-on practice lab | `devman learn lab kubernetes` |
 | `learn validate <module> [dir]` | Validate required tools and lab files | `devman learn validate docker` |
+| `learn cheatsheet [module]` | Show step-by-step commands when you feel lost | `devman learn cheatsheet docker` |
 | `learn project [dir]` | Create a full capstone project template | `devman learn project devops-capstone` |
 | `learn check [module]` | Check required local tools and install hints | `devman learn check terraform` |
 | `learn quiz [module] [count]` | Run a randomized interactive knowledge check | `devman learn quiz docker 5` |
@@ -170,6 +171,7 @@ Each `learn start` module prints a mission-style guide with a goal, challenge, r
 Learning content now lives outside the Bash logic:
 
 * `content/learning.json` - modules, levels, missions, tools, validation rules, XP, badges, and quiz banks.
+* `content/cheatsheets/` - step-by-step module cheat sheets for when you need a quick path.
 * `content/labs/` - file-based lab templates copied by `devman learn lab`.
 * `content/templates/capstone-platform/` - full Docker + Kubernetes + Terraform + CI project starter.
 
@@ -221,6 +223,7 @@ devman bootstrap docker      # Creates docker-compose.yaml
 * `devman.sh` - Thin executable entrypoint, startup configuration, module loading, completion output, and CLI dispatch.
 * `registry.json` - Tool download patterns, checksum sources, and optional GPG verification rules.
 * `content/learning.json` - Data-driven learning roadmap, missions, quizzes, validation rules, XP, and badges.
+* `content/cheatsheets/` - Quick command references for every learning module.
 * `content/labs/` - Lab templates used by `devman learn lab`.
 * `content/templates/` - Project templates, including the capstone platform starter.
 * `lib/helpers.sh` - Shared logging, prerequisite checks, version resolution, placeholder replacement, checksum, and GPG helpers.

@@ -38,6 +38,7 @@ learning_usage() {
     echo "  init [directory]           Create a full learning workspace"
     echo "  lab <module> [directory]   Create a runnable practice lab"
     echo "  validate <module> [dir]    Validate tools and lab files"
+    echo "  cheatsheet [module]        Show the module cheat sheet"
     echo "  project [directory]        Create the full capstone project template"
     echo "  check [module]             Check local tool readiness"
     echo "  tools                      Show tools used across the roadmap"
@@ -426,6 +427,7 @@ learning_start() {
     echo ""
     echo "Suggested next commands"
     echo "  devman learn check $module"
+    echo "  devman learn cheatsheet $module"
     echo "  devman learn lab $module"
     echo "  devman learn validate $module"
     echo "  devman learn quiz $module 5"
@@ -614,11 +616,67 @@ learning_print_lab_next_steps() {
     fi
 
     echo ""
+    echo "Cheat sheet"
+    echo "  devman learn cheatsheet $module"
+    echo ""
     echo "Validation"
     echo "  From this directory: devman learn validate $module $lab_arg"
     echo "  From inside the lab: devman learn validate $module ."
     echo ""
     echo "Note: If you saw 'Keeping existing file', DevMan protected files you already edited."
+}
+
+learning_cheatsheet() {
+    local module=${1:-}
+    local file
+
+    learning_require_content
+    learning_ensure_progress
+
+    if [[ -z "$module" || "$module" == "current" ]]; then
+        module=$(learning_current_module)
+        [[ -z "$module" ]] && module=$(learning_next_module)
+    fi
+    [[ -z "$module" ]] && module="flow"
+
+    if [[ "$module" == "flow" || "$module" == "help" ]]; then
+        file="$LEARNING_CONTENT_DIR/cheatsheets/learning-flow.md"
+    elif [[ "$module" == "all" || "$module" == "list" ]]; then
+        echo -e "${GREEN}Available cheat sheets${NC}"
+        echo "  flow"
+        local known
+        for known in "${LEARNING_MODULES[@]}"; do
+            echo "  $known"
+        done
+        echo ""
+        echo "Run: devman learn cheatsheet docker"
+        return 0
+    else
+        if ! learning_module_valid "$module"; then
+            echo -e "${RED}Error: Unknown learning module '$module'.${NC}" >&2
+            exit 1
+        fi
+        file="$LEARNING_CONTENT_DIR/cheatsheets/$module.md"
+    fi
+
+    if [[ ! -f "$file" ]]; then
+        echo -e "${RED}Error: cheat sheet not found at $file.${NC}" >&2
+        exit 1
+    fi
+
+    echo -e "${GREEN}Cheat sheet: $module${NC}"
+    echo "--------------------------------------------------------------------------------"
+    cat "$file"
+    echo ""
+    echo "--------------------------------------------------------------------------------"
+    if [[ "$module" != "flow" && "$module" != "help" ]]; then
+        echo "Next commands:"
+        echo "  devman learn lab $module"
+        echo "  devman learn validate $module ."
+        echo "  devman learn quiz $module 5"
+    else
+        echo "Next command: devman learn start"
+    fi
 }
 
 learning_init_workspace() {
@@ -1016,6 +1074,9 @@ learning_dispatch() {
             ;;
         validate)
             learning_validate_lab "${1:-}" "${2:-}"
+            ;;
+        cheatsheet|cheat|cs)
+            learning_cheatsheet "${1:-}"
             ;;
         project|template|capstone-project)
             learning_create_project "${1:-devops-capstone-platform}"
