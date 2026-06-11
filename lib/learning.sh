@@ -573,6 +573,54 @@ learning_copy_tree() {
     return 0
 }
 
+learning_print_lab_next_steps() {
+    local module=$1
+    local lab_dir=$2
+    local lab_arg
+    local lab_abs="$lab_dir"
+    local lab_abs_arg
+
+    printf -v lab_arg '%q' "$lab_dir"
+    if [[ -d "$lab_dir" ]]; then
+        lab_abs=$(cd "$lab_dir" && pwd -P)
+    fi
+    printf -v lab_abs_arg '%q' "$lab_abs"
+
+    echo ""
+    echo "Lab map"
+    echo "  Folder: $lab_abs"
+    echo "  Read:   $lab_arg/README.md"
+    echo ""
+
+    if jq -e --arg module "$module" \
+        '.modules[] | select(.id == $module) | (.lab_next // []) | length > 0' \
+        "$LEARNING_DATA_FILE" >/dev/null; then
+        echo "Suggested path"
+        local step
+        local step_index=1
+        while IFS= read -r step; do
+            step="${step//\{dir\}/$lab_arg}"
+            step="${step//\{abs_dir\}/$lab_abs_arg}"
+            printf "  %s. %s\n" "$step_index" "$step"
+            step_index=$((step_index + 1))
+        done < <(jq -r --arg module "$module" \
+            '.modules[] | select(.id == $module) | (.lab_next // [])[]' \
+            "$LEARNING_DATA_FILE")
+    else
+        echo "Suggested path"
+        echo "  1. cd $lab_arg"
+        echo "  2. cat README.md"
+        echo "  3. devman learn validate $module ."
+    fi
+
+    echo ""
+    echo "Validation"
+    echo "  From this directory: devman learn validate $module $lab_arg"
+    echo "  From inside the lab: devman learn validate $module ."
+    echo ""
+    echo "Note: If you saw 'Keeping existing file', DevMan protected files you already edited."
+}
+
 learning_init_workspace() {
     local root=${1:-devops-learning-lab}
     mkdir -p "$root/labs" "$root/notes" "$root/scripts"
@@ -689,7 +737,7 @@ learning_create_lab() {
 
     learning_record_activity "$module" "created lab" 0 ""
     echo -e "${GREEN}Created $module lab at: $lab_dir${NC}"
-    echo "Validate it with: devman learn validate $module $lab_dir"
+    learning_print_lab_next_steps "$module" "$lab_dir"
     log_message "Created learning lab '$module' at $lab_dir" "SUCCESS"
 }
 

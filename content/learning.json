@@ -107,6 +107,15 @@
         "required_files": ["README.md", "Dockerfile", "compose.yaml", "app/index.html"],
         "optional_files": ["debug-notes.md"]
       },
+      "lab_next": [
+        "cd {dir}",
+        "docker compose -f compose.yaml up --build",
+        "Open http://localhost:8080 or run: curl http://localhost:8080",
+        "docker compose -f compose.yaml logs web",
+        "docker compose -f compose.yaml down",
+        "devman learn validate docker .",
+        "If docker ps still shows devman-web-1, that container came from another Compose project. Stop the root project with: cd ~/devman && docker compose down"
+      ],
       "xp": {"start": 5, "quiz": 15, "validate": 25, "complete": 50},
       "badges": {"quiz": "quiz-docker", "validate": "validated-docker", "complete": "complete-docker"},
       "quiz": [
