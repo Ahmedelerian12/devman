@@ -198,8 +198,17 @@ devman bootstrap docker      # Creates docker-compose.yaml
 
 ## File Structure
 
-* `devman.sh` - The core version manager and learning automation script.
+* `devman.sh` - Thin executable entrypoint, startup configuration, module loading, completion output, and CLI dispatch.
 * `registry.json` - Tool download patterns, checksum sources, and optional GPG verification rules.
+* `lib/helpers.sh` - Shared logging, prerequisite checks, version resolution, placeholder replacement, checksum, and GPG helpers.
+* `lib/tools.sh` - Active version switching, listing, and uninstall logic.
+* `lib/installer.sh` - Download, verify, extract, install, and install-all workflows.
+* `lib/env.sh` - Project auto-switching for `.devman-version` and `.tool-versions`.
+* `lib/registry.sh` - Registry add, remove, and sync commands.
+* `lib/maintenance.sh` - Cache pruning, ad-hoc runs, update checks, upgrades, and lockfile import/export.
+* `lib/bootstrap.sh` - Terraform, Kubernetes, and Docker starter templates.
+* `lib/learning.sh` - DevOps roadmap, guided missions, labs, progress, checks, and randomized quizzes.
+* `lib/tui.sh` - Interactive dashboard, menus, prompts, and action wrappers.
 * `~/.devman/versions/` - Tool version cache.
 * `~/.devman/learning-progress.json` - Local DevOps learning progress state.
 * `~/.devman/devman.log` - Text-file audit log.
