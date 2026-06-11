@@ -98,7 +98,25 @@ Then restart your machine if Windows asks, open the new Linux terminal, and run 
 
 ## Usage Guide
 
-### 1. General CLI Commands
+### 1. Interactive TUI Dashboard
+
+Run DevMan with no arguments to open the upgraded terminal dashboard:
+
+```bash
+devman
+```
+
+The dashboard includes:
+
+* **Tool manager** - install latest/specific versions, switch active versions, inspect installed versions, or uninstall cached versions.
+* **Learning hub** - open the roadmap, start modules, create labs, run readiness checks, take quizzes, and generate study plans.
+* **Bootstrap samples** - create Terraform, Kubernetes, or Docker Compose starter files.
+* **Maintenance** - list tools, check updates, upgrade active tools, export/import lockfiles, prune cache, manage the registry, and view logs.
+* **System status** - inspect DevMan paths, prerequisites, PATH setup, active tools, and learning progress.
+
+Use `Up/Down` or `j/k` to move, `Enter` to select, number keys for shortcuts, and `q` or `Esc` to go back.
+
+### 2. General CLI Commands
 
 | Command | Description | Example |
 | :--- | :--- | :--- |
@@ -110,7 +128,7 @@ Then restart your machine if Windows asks, open the new Linux terminal, and run 
 | `prune` | Delete inactive tool versions | `devman prune` |
 | `logs` | View the event execution audit trail | `devman logs` |
 
-### 2. DevOps Learning Automation
+### 3. DevOps Learning Automation
 
 Automate a complete DevOps learning path without leaving the terminal:
 
@@ -136,7 +154,7 @@ linux -> git -> shell -> docker -> kubernetes -> terraform -> ansible
 
 Progress is stored at `~/.devman/learning-progress.json`. Generated labs are starter templates; run the commands inside each lab only when your local tools are ready.
 
-### 3. Workspace Lockfiles
+### 4. Workspace Lockfiles
 
 Replicate development environments across your team:
 
@@ -145,7 +163,7 @@ devman export devman.lock
 devman import devman.lock
 ```
 
-### 4. Project Configuration
+### 5. Project Configuration
 
 Create a `.devman-version` or `.tool-versions` file in your project directory:
 
@@ -156,7 +174,7 @@ yq v4.34.1
 
 When you enter the directory via `cd`, DevMan can automatically switch active tool links to those versions.
 
-### 5. Registry CLI Management
+### 6. Registry CLI Management
 
 ```bash
 devman registry add mytool github owner/repo
@@ -164,7 +182,7 @@ devman registry remove mytool
 devman registry sync https://internal-api.corp/devman-registry.json
 ```
 
-### 6. Interactive Bootstrap
+### 7. Interactive Bootstrap
 
 Quickly bootstrap templates for new configurations:
 
