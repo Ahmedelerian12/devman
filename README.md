@@ -38,19 +38,27 @@ Make sure the following dependencies are installed on your host shell:
 ## Installation
 
 1. Clone this repository or copy the files to your local system.
-2. Make the manager script executable:
+2. Run the installer:
+
+   ```bash
+   ./install.sh
+   ```
+
+   The installer checks dependencies, links `devman` into `~/.local/bin`, and adds PATH/completion setup to your shell profile.
+
+3. Or make the manager script executable manually:
 
    ```bash
    chmod +x devman.sh
    ```
 
-3. Add the active binary directory (`~/.local/bin`) to your shell path:
+4. Add the active binary directory (`~/.local/bin`) to your shell path:
 
    ```bash
    export PATH="$HOME/.local/bin:$PATH"
    ```
 
-4. Enable shell auto-completion and directory change hooks:
+5. Enable shell auto-completion and directory change hooks:
 
    ```bash
    # Bash
@@ -109,7 +117,7 @@ devman
 The dashboard includes:
 
 * **Tool manager** - install latest/specific versions, switch active versions, inspect installed versions, or uninstall cached versions.
-* **Learning hub** - open the roadmap, start guided module missions, create labs, run readiness checks, take randomized quizzes, and generate study plans.
+* **Learning hub** - open the roadmap, start guided module missions, create labs, validate labs, track XP/streaks/badges, take randomized quizzes, and generate study plans.
 * **Bootstrap samples** - create Terraform, Kubernetes, or Docker Compose starter files.
 * **Maintenance** - list tools, check updates, upgrade active tools, export/import lockfiles, prune cache, manage the registry, and view logs.
 * **System status** - inspect DevMan paths, prerequisites, PATH setup, active tools, and learning progress.
@@ -138,10 +146,13 @@ Automate a complete DevOps learning path without leaving the terminal:
 | `learn start [module]` | Start a guided module mission with steps and checkpoints | `devman learn start docker` |
 | `learn next` | Continue with the next unfinished module | `devman learn next` |
 | `learn lab <module>` | Generate a hands-on practice lab | `devman learn lab kubernetes` |
+| `learn validate <module> [dir]` | Validate required tools and lab files | `devman learn validate docker` |
+| `learn project [dir]` | Create a full capstone project template | `devman learn project devops-capstone` |
 | `learn check [module]` | Check required local tools and install hints | `devman learn check terraform` |
 | `learn quiz [module] [count]` | Run a randomized interactive knowledge check | `devman learn quiz docker 5` |
 | `learn complete <module>` | Mark a module complete | `devman learn complete docker` |
 | `learn progress` | Show current and completed modules | `devman learn progress` |
+| `learn activity` | Show recent XP and badge events | `devman learn activity` |
 | `learn plan [days]` | Generate a paced study plan | `devman learn plan 45` |
 | `learn init [dir]` | Create a full learning workspace | `devman learn init devops-learning-lab` |
 
@@ -155,6 +166,14 @@ linux -> git -> shell -> docker -> kubernetes -> terraform -> ansible
 Progress is stored at `~/.devman/learning-progress.json`. Generated labs are starter templates; run the commands inside each lab only when your local tools are ready.
 
 Each `learn start` module prints a mission-style guide with a goal, challenge, recommended tools, step-by-step instructions, a checkpoint, and suggested next commands. Quizzes pull random questions from a larger module bank and give immediate feedback, so repeating a quiz is useful practice instead of memorizing a fixed set.
+
+Learning content now lives outside the Bash logic:
+
+* `content/learning.json` - modules, levels, missions, tools, validation rules, XP, badges, and quiz banks.
+* `content/labs/` - file-based lab templates copied by `devman learn lab`.
+* `content/templates/capstone-platform/` - full Docker + Kubernetes + Terraform + CI project starter.
+
+Progress includes XP, streaks, badges, recent activity, completed modules, and the current mission.
 
 ### 4. Workspace Lockfiles
 
@@ -198,8 +217,12 @@ devman bootstrap docker      # Creates docker-compose.yaml
 
 ## File Structure
 
+* `install.sh` - Installer for dependencies, PATH, symlink, and shell completion setup.
 * `devman.sh` - Thin executable entrypoint, startup configuration, module loading, completion output, and CLI dispatch.
 * `registry.json` - Tool download patterns, checksum sources, and optional GPG verification rules.
+* `content/learning.json` - Data-driven learning roadmap, missions, quizzes, validation rules, XP, and badges.
+* `content/labs/` - Lab templates used by `devman learn lab`.
+* `content/templates/` - Project templates, including the capstone platform starter.
 * `lib/helpers.sh` - Shared logging, prerequisite checks, version resolution, placeholder replacement, checksum, and GPG helpers.
 * `lib/tools.sh` - Active version switching, listing, and uninstall logic.
 * `lib/installer.sh` - Download, verify, extract, install, and install-all workflows.

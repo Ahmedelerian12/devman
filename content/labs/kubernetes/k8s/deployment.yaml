@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devman-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devman-web
+  template:
+    metadata:
+      labels:
+        app: devman-web
+    spec:
+      containers:
+        - name: web
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80

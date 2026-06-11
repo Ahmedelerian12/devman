@@ -1,0 +1,13 @@
+name: DevOps CI
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax check
+        run: find . -name "*.sh" -print0 | xargs -0 -r bash -n
+      - name: Docker placeholder
+        run: test -f Dockerfile && echo "Add image build here" || true
+      - name: Terraform placeholder
+        run: test -f main.tf && echo "Add terraform validate here" || true

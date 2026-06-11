@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: capstone-web
+  template:
+    metadata:
+      labels:
+        app: capstone-web
+    spec:
+      containers:
+        - name: web
+          image: capstone-web:local
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80

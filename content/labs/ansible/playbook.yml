@@ -1,0 +1,9 @@
+---
+- name: DevMan Ansible learning lab
+  hosts: local
+  gather_facts: true
+  tasks:
+    - name: Write a local config artifact
+      copy:
+        dest: ./ansible-lab-output.txt
+        content: "Configured by Ansible\n"

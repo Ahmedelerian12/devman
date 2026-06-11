@@ -112,13 +112,20 @@ tui_status_summary() {
     printf "Registry tools: %s | Active tools: %s | Installed versions: %s | PATH: %s\n" \
         "$total_tools" "$active_tools" "$installed_versions" "$path_status"
 
-    if command -v jq >/dev/null 2>&1 && [[ -f "$LEARNING_PROGRESS_FILE" ]]; then
+    if command -v jq >/dev/null 2>&1; then
         local completed_count
         local next_module
+        local current_module
+        local xp
+        local streak
         completed_count=$(jq -r '(.completed // []) | length' "$LEARNING_PROGRESS_FILE" 2>/dev/null || echo "0")
+        current_module=$(jq -r '.current // ""' "$LEARNING_PROGRESS_FILE" 2>/dev/null || echo "")
+        xp=$(jq -r '.xp // 0' "$LEARNING_PROGRESS_FILE" 2>/dev/null || echo "0")
+        streak=$(jq -r '.streak // 0' "$LEARNING_PROGRESS_FILE" 2>/dev/null || echo "0")
         next_module=$(learning_next_module)
         [[ -z "$next_module" ]] && next_module="complete"
-        printf "Learning: %s/%s complete | Next: %s\n" "$completed_count" "${#LEARNING_MODULES[@]}" "$next_module"
+        printf "Learning: %s | XP: %s | Streak: %s | Current: %s | Next: %s\n" \
+            "$(learning_progress_bar)" "$xp" "$streak" "${current_module:-none}" "$next_module"
     else
         echo "Learning: progress starts with 'Learning hub -> Start next module'"
     fi
@@ -461,26 +468,34 @@ tui_learning_menu() {
         local options=(
             "Roadmap"
             "Progress"
+            "Resume current mission"
             "Start next module"
             "Start selected module"
             "Create lab"
+            "Validate lab"
             "Check module tools"
             "Quiz"
             "Study plan"
             "Init workspace"
+            "Create capstone project"
+            "Recent activity"
             "Reset progress"
             "Back"
         )
         local descriptions=(
             "View the complete DevOps path"
-            "Show completed and next modules"
+            "Show XP, streaks, badges, and modules"
+            "Open the saved current module"
             "Continue from saved progress"
             "Pick a module from the roadmap"
             "Generate practice files"
+            "Check tools and required lab files"
             "Check local tool readiness"
-            "Answer a short interactive quiz"
+            "Answer a randomized interactive quiz"
             "Generate a day-by-day plan"
             "Create notes, labs, and Makefile"
+            "Create Docker + Kubernetes + Terraform + CI starter"
+            "Show recent learning events"
             "Clear local learning-progress.json"
             "Return to dashboard"
         )
@@ -495,6 +510,9 @@ tui_learning_menu() {
                 ;;
             "Progress")
                 tui_run_action "Learning Progress" learning_progress
+                ;;
+            "Resume current mission")
+                tui_run_action "Resume Mission" learning_start "next"
                 ;;
             "Start next module")
                 tui_run_action "Start Next Module" learning_start "next"
@@ -514,6 +532,16 @@ tui_learning_menu() {
                     fi
                 fi
                 ;;
+            "Validate lab")
+                if tui_choose_learning_module "Validate Lab"; then
+                    tui_prompt "Validate $TUI_MODULE Lab" "Lab directory (blank for default): "
+                    if [[ -n "$TUI_INPUT" ]]; then
+                        tui_run_action "Validate $TUI_MODULE Lab" learning_validate_lab "$TUI_MODULE" "$TUI_INPUT"
+                    else
+                        tui_run_action "Validate $TUI_MODULE Lab" learning_validate_lab "$TUI_MODULE"
+                    fi
+                fi
+                ;;
             "Check module tools")
                 if tui_choose_learning_module "Check Tools"; then
                     tui_run_action "Check $TUI_MODULE Tools" learning_check "$TUI_MODULE"
@@ -523,7 +551,7 @@ tui_learning_menu() {
                 if tui_choose_learning_module "Run Quiz"; then
                     tui_show_cursor
                     tui_header "Quiz: $TUI_MODULE"
-                    learning_quiz "$TUI_MODULE"
+                    learning_quiz "$TUI_MODULE" "5"
                     tui_pause
                     tui_hide_cursor
                 fi
@@ -535,6 +563,13 @@ tui_learning_menu() {
             "Init workspace")
                 tui_prompt "Initialize Learning Workspace" "Workspace directory: " "devops-learning-lab"
                 tui_run_action "Initialize Learning Workspace" learning_init_workspace "$TUI_INPUT"
+                ;;
+            "Create capstone project")
+                tui_prompt "Create Capstone Project" "Project directory: " "devops-capstone-platform"
+                tui_run_action "Create Capstone Project" learning_create_project "$TUI_INPUT"
+                ;;
+            "Recent activity")
+                tui_run_action "Recent Learning Activity" learning_recent_activity
                 ;;
             "Reset progress")
                 if tui_confirm "Reset Learning Progress" "Reset saved learning progress"; then
@@ -715,6 +750,7 @@ interactive_tui() {
     while true; do
         local options=(
             "Tool manager"
+            "Resume last mission"
             "Learning hub"
             "Bootstrap samples"
             "Maintenance"
@@ -723,6 +759,7 @@ interactive_tui() {
         )
         local descriptions=(
             "Install, switch, inspect, or uninstall tools"
+            "Continue the current or next learning mission"
             "Roadmap, labs, progress, quizzes, and study plans"
             "Generate Terraform, Kubernetes, or Docker starters"
             "Updates, lockfiles, registry, cleanup, and logs"
@@ -737,6 +774,9 @@ interactive_tui() {
         case "${options[TUI_SELECTED]}" in
             "Tool manager")
                 tui_tools_menu
+                ;;
+            "Resume last mission")
+                tui_run_action "Resume Last Mission" learning_start "next"
                 ;;
             "Learning hub")
                 tui_learning_menu

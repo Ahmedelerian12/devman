@@ -1,0 +1,354 @@
+{
+  "modules": [
+    {
+      "id": "linux",
+      "level": "beginner",
+      "title": "Linux and networking fundamentals",
+      "goal": "Navigate Linux systems, inspect processes, understand ports, permissions, DNS, and basic troubleshooting.",
+      "challenge": "Use ps, ss/netstat, dig/nslookup, chmod, system logs, and curl to explain why a service is or is not reachable.",
+      "tools": ["bash", "curl", "jq"],
+      "steps": [
+        "Map the system: print OS, kernel, disk, memory, PATH, and current user.",
+        "Investigate a port: list listening sockets and identify the owning process.",
+        "Trace a request: resolve a hostname, curl it, and explain each failure mode.",
+        "Practice permissions: create a file, change modes, and explain owner/group/other.",
+        "Write a mini incident note: symptom, checks, cause, fix, and prevention."
+      ],
+      "checkpoint": "You can explain what is running, what is listening, and why a request succeeds or fails.",
+      "validation": {
+        "required_tools": ["bash", "curl", "jq"],
+        "required_files": ["README.md", "system-check.sh"],
+        "optional_files": ["incident-note.md"]
+      },
+      "xp": {"start": 5, "quiz": 15, "validate": 25, "complete": 50},
+      "badges": {"quiz": "quiz-linux", "validate": "validated-linux", "complete": "complete-linux"},
+      "quiz": [
+        {"question": "Which command is best for checking listening TCP ports? a) chmod b) ss c) mkdir", "answer": "b", "explanation": "ss shows sockets and listening ports; netstat can work on older systems."},
+        {"question": "What does exit code 0 usually mean? a) success b) warning c) failure", "answer": "a", "explanation": "A zero exit code conventionally means the command succeeded."},
+        {"question": "Which DNS record maps a name to an IPv4 address? a) MX b) A c) TXT", "answer": "b", "explanation": "A records map names to IPv4 addresses; AAAA records map names to IPv6 addresses."},
+        {"question": "Which command changes file permissions? a) chmod b) dig c) ps", "answer": "a", "explanation": "chmod changes permission bits such as read, write, and execute."}
+      ]
+    },
+    {
+      "id": "git",
+      "level": "beginner",
+      "title": "Git workflows and collaboration",
+      "goal": "Build safe branching, pull request, rollback, tagging, and release habits.",
+      "challenge": "Create a feature branch, rebase or merge it cleanly, tag a release, and demonstrate a rollback path.",
+      "tools": ["git"],
+      "steps": [
+        "Create a repo map: branches, remotes, recent commits, and tags.",
+        "Run a feature branch mission: two commits, one review-ready diff, one clean merge.",
+        "Practice recovery: revert a commit and explain why it is safer than rewriting shared history.",
+        "Tag a release and write a tiny changelog.",
+        "Draw your team workflow: branch names, PR checks, merge rules, and rollback path."
+      ],
+      "checkpoint": "You can move from change to reviewed commit to release tag to safe rollback.",
+      "validation": {
+        "required_tools": ["git"],
+        "required_files": ["README.md", ".gitignore"],
+        "optional_files": ["workflow-notes.md"]
+      },
+      "xp": {"start": 5, "quiz": 15, "validate": 25, "complete": 50},
+      "badges": {"quiz": "quiz-git", "validate": "validated-git", "complete": "complete-git"},
+      "quiz": [
+        {"question": "Which command creates an annotated release marker? a) git tag -a b) git stash c) git fetch", "answer": "a", "explanation": "Annotated tags are useful for releases because they carry metadata and a message."},
+        {"question": "Which command safely undoes a committed change by adding a new commit? a) git revert b) git reset --hard c) git clean", "answer": "a", "explanation": "git revert preserves shared history by creating a new reversing commit."},
+        {"question": "What is a pull request mainly for? a) code review and merge discussion b) deleting branches c) installing packages", "answer": "a", "explanation": "Pull requests organize review, discussion, checks, and merging."},
+        {"question": "Which command downloads remote refs without merging them? a) git fetch b) git commit c) git tag", "answer": "a", "explanation": "git fetch updates remote-tracking refs while leaving your branch untouched."}
+      ]
+    },
+    {
+      "id": "shell",
+      "level": "beginner",
+      "title": "Shell scripting and automation",
+      "goal": "Automate repeatable checks with portable Bash scripts and clear exit codes.",
+      "challenge": "Write a health-check script that validates tools, ports, files, and JSON output with useful failures.",
+      "tools": ["bash", "curl", "jq"],
+      "steps": [
+        "Write a script with strict mode and readable logging.",
+        "Validate required commands before doing work.",
+        "Parse JSON with jq and fail clearly when data is missing.",
+        "Add command-line arguments and a help message.",
+        "Test success and failure paths, then capture the expected exit codes."
+      ],
+      "checkpoint": "Your script fails loudly, exits correctly, and helps the next human debug it.",
+      "validation": {
+        "required_tools": ["bash", "curl", "jq"],
+        "required_files": ["README.md", "devops-health.sh"],
+        "optional_files": ["test-notes.md"]
+      },
+      "xp": {"start": 5, "quiz": 15, "validate": 25, "complete": 50},
+      "badges": {"quiz": "quiz-shell", "validate": "validated-shell", "complete": "complete-shell"},
+      "quiz": [
+        {"question": "What does set -euo pipefail improve? a) script safety b) color output c) network speed", "answer": "a", "explanation": "It catches failed commands, unset variables, and pipeline failures earlier."},
+        {"question": "Which tool is best for JSON parsing in shell scripts? a) jq b) tar c) ssh-keygen", "answer": "a", "explanation": "jq parses JSON structurally instead of relying on fragile text matching."},
+        {"question": "Where should error messages usually go? a) stderr b) /dev/null always c) only README files", "answer": "a", "explanation": "stderr separates errors from normal command output."},
+        {"question": "Why quote variables like \"$file\"? a) preserve spaces and avoid glob surprises b) make output green c) install dependencies", "answer": "a", "explanation": "Quoting prevents word splitting and unintended wildcard expansion."}
+      ]
+    },
+    {
+      "id": "docker",
+      "level": "beginner",
+      "title": "Containers with Docker and Compose",
+      "goal": "Package an app into an image, run it locally, wire services with Compose, and debug containers.",
+      "challenge": "Build a small web image, run it with Compose, inspect logs, exec into it, and rebuild after a change.",
+      "tools": ["docker", "docker-compose"],
+      "steps": [
+        "Build a tiny web image and tag it with a learning version.",
+        "Run it locally, inspect logs, exec into the container, and find the served files.",
+        "Add Compose so the app starts with one command.",
+        "Break one thing on purpose, read the error, and fix it.",
+        "Record build, run, debug, and cleanup commands in the lab README."
+      ],
+      "checkpoint": "You can build, run, inspect, break, fix, and clean up a containerized app.",
+      "validation": {
+        "required_tools": ["docker"],
+        "required_files": ["README.md", "Dockerfile", "compose.yaml", "app/index.html"],
+        "optional_files": ["debug-notes.md"]
+      },
+      "xp": {"start": 5, "quiz": 15, "validate": 25, "complete": 50},
+      "badges": {"quiz": "quiz-docker", "validate": "validated-docker", "complete": "complete-docker"},
+      "quiz": [
+        {"question": "Which file usually defines image build steps? a) Dockerfile b) deployment.yaml c) main.tf", "answer": "a", "explanation": "Dockerfile instructions describe how to build a container image."},
+        {"question": "What does a container image contain? a) packaged filesystem and metadata b) only source code c) only logs", "answer": "a", "explanation": "Images bundle filesystem layers plus metadata such as command and environment."},
+        {"question": "Which command shows container logs? a) docker logs b) git log c) terraform show", "answer": "a", "explanation": "docker logs reads stdout and stderr captured for a container."},
+        {"question": "Which command builds an image from the current directory? a) docker build -t name . b) docker ps -a c) docker volume ls", "answer": "a", "explanation": "docker build reads the Dockerfile and build context."},
+        {"question": "What does docker compose up do? a) starts services from a Compose file b) creates a Git branch c) applies Terraform state", "answer": "a", "explanation": "Compose starts multi-container applications from compose.yaml."},
+        {"question": "Why prefer specific image tags over latest? a) repeatability b) prettier output c) fewer commands", "answer": "a", "explanation": "Specific tags make builds and deployments easier to reproduce."}
+      ]
+    },
+    {
+      "id": "kubernetes",
+      "level": "intermediate",
+      "title": "Kubernetes application operations",
+      "goal": "Deploy, expose, inspect, scale, and troubleshoot workloads in a local cluster.",
+      "challenge": "Deploy an app, expose it, scale it, inspect events, roll out a change, and roll it back.",
+      "tools": ["kubectl", "minikube", "helm", "k9s", "yq"],
+      "steps": [
+        "Start a local cluster and confirm kubectl context.",
+        "Apply Deployment and Service manifests.",
+        "Inspect pods, events, rollout status, and logs.",
+        "Scale replicas, restart the rollout, then roll back a bad image tag.",
+        "Port-forward the service and write a troubleshooting runbook."
+      ],
+      "checkpoint": "You can deploy, observe, scale, roll out, and recover a local workload.",
+      "validation": {
+        "required_tools": ["kubectl"],
+        "required_files": ["README.md", "k8s/deployment.yaml", "k8s/service.yaml"],
+        "optional_files": ["runbook.md"]
+      },
+      "xp": {"start": 5, "quiz": 20, "validate": 30, "complete": 60},
+      "badges": {"quiz": "quiz-kubernetes", "validate": "validated-kubernetes", "complete": "complete-kubernetes"},
+      "quiz": [
+        {"question": "Which object keeps pods running at a desired replica count? a) Deployment b) Secret c) Namespace", "answer": "a", "explanation": "Deployments manage ReplicaSets, which keep the desired number of pods running."},
+        {"question": "Which command shows recent cluster scheduling issues? a) kubectl get events b) docker build c) git tag", "answer": "a", "explanation": "Events often explain scheduling, image pull, and probe failures."},
+        {"question": "Which Service type is commonly used for internal-only access? a) ClusterIP b) NodeName c) Dockerfile", "answer": "a", "explanation": "ClusterIP exposes a service inside the cluster."},
+        {"question": "What does a readiness probe control? a) whether a pod receives traffic b) Git tag signing c) Docker layer caching", "answer": "a", "explanation": "Readiness probes tell Kubernetes if the container is ready for service traffic."}
+      ]
+    },
+    {
+      "id": "terraform",
+      "level": "intermediate",
+      "title": "Infrastructure as Code with Terraform",
+      "goal": "Model infrastructure declaratively, review plans, manage state, and structure reusable modules.",
+      "challenge": "Create local infrastructure, run fmt/validate/plan/apply, inspect state, and destroy safely.",
+      "tools": ["terraform", "tflint", "yq", "jq"],
+      "steps": [
+        "Run init, fmt, validate, and plan before applying anything.",
+        "Apply a small local resource and inspect outputs.",
+        "Inspect state and explain what Terraform is tracking.",
+        "Change an input variable and compare the new plan.",
+        "Destroy cleanly and write down the safe workflow order."
+      ],
+      "checkpoint": "You can predict changes with a plan, apply safely, inspect state, and destroy cleanly.",
+      "validation": {
+        "required_tools": ["terraform"],
+        "required_files": ["README.md", "main.tf"],
+        "optional_files": ["terraform-notes.md"]
+      },
+      "xp": {"start": 5, "quiz": 20, "validate": 30, "complete": 60},
+      "badges": {"quiz": "quiz-terraform", "validate": "validated-terraform", "complete": "complete-terraform"},
+      "quiz": [
+        {"question": "Which command previews infrastructure changes? a) terraform plan b) terraform fmt c) terraform output", "answer": "a", "explanation": "plan shows proposed changes before apply."},
+        {"question": "What does Terraform state track? a) managed resource mappings b) shell aliases c) Git branches", "answer": "a", "explanation": "State maps configuration resources to real infrastructure objects."},
+        {"question": "Which command formats Terraform files? a) terraform fmt b) terraform destroy c) terraform state rm", "answer": "a", "explanation": "fmt applies standard Terraform formatting."},
+        {"question": "Which command initializes providers and backend? a) terraform init b) terraform output c) terraform console only", "answer": "a", "explanation": "init downloads providers and configures backend state."}
+      ]
+    },
+    {
+      "id": "ansible",
+      "level": "intermediate",
+      "title": "Configuration automation with Ansible",
+      "goal": "Write idempotent playbooks, manage inventories, template files, and apply configuration safely.",
+      "challenge": "Apply a playbook to localhost, prove idempotency, and template a config file from variables.",
+      "tools": ["ansible"],
+      "steps": [
+        "Create a localhost inventory and run a simple playbook.",
+        "Add variables and template or copy a config artifact.",
+        "Run the playbook twice and prove idempotency.",
+        "Add a handler or conditional task.",
+        "Document what changed, what stayed unchanged, and why."
+      ],
+      "checkpoint": "You can run a repeatable playbook and prove the second run is stable.",
+      "validation": {
+        "required_tools": ["ansible"],
+        "required_files": ["README.md", "inventory.ini", "playbook.yml"],
+        "optional_files": ["ansible-notes.md"]
+      },
+      "xp": {"start": 5, "quiz": 20, "validate": 30, "complete": 60},
+      "badges": {"quiz": "quiz-ansible", "validate": "validated-ansible", "complete": "complete-ansible"},
+      "quiz": [
+        {"question": "What does idempotent mean? a) repeated runs converge safely b) every run must fail once c) no variables allowed", "answer": "a", "explanation": "Idempotent tasks can run repeatedly without unnecessary changes."},
+        {"question": "Which file lists target hosts? a) inventory b) Dockerfile c) state file", "answer": "a", "explanation": "Inventories define hosts and groups Ansible should manage."},
+        {"question": "Which format are playbooks usually written in? a) YAML b) PNG c) ZIP", "answer": "a", "explanation": "Ansible playbooks are YAML documents."},
+        {"question": "Why run a playbook twice in a lab? a) prove idempotency b) erase logs c) change branches", "answer": "a", "explanation": "The second run should usually report no changes for stable tasks."}
+      ]
+    },
+    {
+      "id": "cicd",
+      "level": "intermediate",
+      "title": "CI/CD pipelines and release automation",
+      "goal": "Create pipelines that test, scan, build, package, and publish changes with repeatable gates.",
+      "challenge": "Create a pipeline that runs lint, tests, image build, IaC validation, and artifact publishing steps.",
+      "tools": ["git", "docker"],
+      "steps": [
+        "Define pipeline stages: lint, test, build, scan, package, deploy.",
+        "Add a minimal workflow file for pull requests and pushes.",
+        "Make one check fail, read the log, and fix the cause.",
+        "Add an artifact or image build placeholder.",
+        "Write promotion rules: what must pass before release."
+      ],
+      "checkpoint": "You can explain every pipeline gate and what evidence it produces.",
+      "validation": {
+        "required_tools": ["git"],
+        "required_files": ["README.md", ".github/workflows/devops-ci.yml"],
+        "optional_files": ["release-notes.md"]
+      },
+      "xp": {"start": 5, "quiz": 20, "validate": 30, "complete": 60},
+      "badges": {"quiz": "quiz-cicd", "validate": "validated-cicd", "complete": "complete-cicd"},
+      "quiz": [
+        {"question": "What is a pipeline gate? a) required check before promotion b) a Kubernetes pod c) a shell prompt", "answer": "a", "explanation": "Gates prevent bad changes from moving forward."},
+        {"question": "Which event often triggers CI? a) push or pull request b) disk mount c) DNS lookup", "answer": "a", "explanation": "CI commonly runs on pushes and pull requests."},
+        {"question": "What should a deployment pipeline be? a) repeatable and auditable b) manual only c) hidden from logs", "answer": "a", "explanation": "Repeatability and auditability make releases safer."},
+        {"question": "Which CI practice protects main branches? a) required passing checks b) committing secrets c) skipping reviews", "answer": "a", "explanation": "Required checks block merges until validations pass."}
+      ]
+    },
+    {
+      "id": "observability",
+      "level": "intermediate",
+      "title": "Logs, metrics, tracing, and alerts",
+      "goal": "Collect useful signals, query them, and connect alerts to action-oriented runbooks.",
+      "challenge": "Collect metrics and logs for a sample app, build a minimal dashboard query, and write an alert runbook.",
+      "tools": ["docker", "docker-compose", "kubectl", "stern"],
+      "steps": [
+        "List the signals your sample app should emit: logs, metrics, traces.",
+        "Start a local metrics stack or inspect Kubernetes/container logs.",
+        "Write three useful queries or log filters.",
+        "Draft one alert with impact, owner, and first checks.",
+        "Turn the alert into a runbook with recovery and prevention steps."
+      ],
+      "checkpoint": "Your alert points to action, and your runbook helps someone recover calmly.",
+      "validation": {
+        "required_tools": ["docker"],
+        "required_files": ["README.md", "prometheus.yml", "compose.yaml", "runbook.md"],
+        "optional_files": ["queries.md"]
+      },
+      "xp": {"start": 5, "quiz": 20, "validate": 30, "complete": 60},
+      "badges": {"quiz": "quiz-observability", "validate": "validated-observability", "complete": "complete-observability"},
+      "quiz": [
+        {"question": "What are the three common signals? a) logs metrics traces b) tags branches commits c) images layers ports", "answer": "a", "explanation": "Logs, metrics, and traces are the core observability signals."},
+        {"question": "What should an alert include? a) action and impact b) only a vague title c) no owner", "answer": "a", "explanation": "Good alerts tell responders what is wrong and what to do first."},
+        {"question": "What is a runbook for? a) repeatable incident response b) package installation only c) hiding errors", "answer": "a", "explanation": "Runbooks guide diagnosis, recovery, and prevention."},
+        {"question": "Which signal is best for trends and thresholds? a) metrics b) chmod bits c) Git tags", "answer": "a", "explanation": "Metrics are numeric time series suitable for thresholds and trends."}
+      ]
+    },
+    {
+      "id": "security",
+      "level": "challenge",
+      "title": "DevSecOps supply chain and runtime security",
+      "goal": "Add security checks to images, IaC, dependencies, secrets, and cluster policy.",
+      "challenge": "Find and fix one insecure Dockerfile pattern, one IaC issue, and one secret-handling problem.",
+      "tools": ["docker", "kubectl", "terraform", "tflint"],
+      "steps": [
+        "Review a Dockerfile for root user, broad permissions, and floating tags.",
+        "Scan IaC for risky defaults and missing constraints.",
+        "Write a secrets rule: where secrets live and where they never go.",
+        "Add one security check to a CI/CD pipeline.",
+        "Explain the risk, fix, and verification for each issue you find."
+      ],
+      "checkpoint": "You can name the risk, apply the fix, and verify the control.",
+      "validation": {
+        "required_tools": ["docker"],
+        "required_files": ["README.md", "Dockerfile.insecure", "security-review.md"],
+        "optional_files": ["Dockerfile.fixed"]
+      },
+      "xp": {"start": 10, "quiz": 25, "validate": 35, "complete": 70},
+      "badges": {"quiz": "quiz-security", "validate": "validated-security", "complete": "complete-security"},
+      "quiz": [
+        {"question": "Why avoid running containers as root? a) reduces blast radius b) makes images larger c) disables logs", "answer": "a", "explanation": "A non-root runtime user limits damage if a process is compromised."},
+        {"question": "Where should secrets not be committed? a) source control b) a secret manager c) environment-specific vault", "answer": "a", "explanation": "Secrets in Git history are hard to remove and easy to leak."},
+        {"question": "What is supply chain scanning for? a) dependency and image risk b) changing DNS records c) creating branches", "answer": "a", "explanation": "Scanning finds vulnerable packages, images, and dependencies."},
+        {"question": "What is least privilege? a) only needed access b) admin for everyone c) public buckets by default", "answer": "a", "explanation": "Least privilege gives identities only the permissions they need."}
+      ]
+    },
+    {
+      "id": "cloud",
+      "level": "challenge",
+      "title": "Cloud architecture and platform operations",
+      "goal": "Map DevOps practices to cloud networking, identity, compute, storage, and managed platforms.",
+      "challenge": "Design a small cloud landing zone with network, identity, compute, storage, and operational guardrails.",
+      "tools": ["terraform", "kubectl", "helm"],
+      "steps": [
+        "Sketch a small environment: network, identity, runtime, storage, monitoring.",
+        "Choose one cloud provider and map each component to a managed service.",
+        "Define least-privilege roles and tagging rules.",
+        "Add backup, cost, and incident-response notes.",
+        "Convert the design into an IaC-ready checklist."
+      ],
+      "checkpoint": "Your cloud design has identity, network, cost, backup, and operations guardrails.",
+      "validation": {
+        "required_tools": ["terraform"],
+        "required_files": ["README.md", "cloud-design.md"],
+        "optional_files": ["cost-notes.md"]
+      },
+      "xp": {"start": 10, "quiz": 25, "validate": 35, "complete": 70},
+      "badges": {"quiz": "quiz-cloud", "validate": "validated-cloud", "complete": "complete-cloud"},
+      "quiz": [
+        {"question": "What should be tagged for cost control? a) cloud resources b) shell variables only c) Git commits only", "answer": "a", "explanation": "Tags help allocate, search, and control cloud costs."},
+        {"question": "What belongs in a landing zone? a) network identity guardrails b) laptop wallpaper c) only app code", "answer": "a", "explanation": "Landing zones establish foundations such as networking, identity, and policy."},
+        {"question": "Why separate public and private subnets? a) limit exposure b) speed up Git c) improve font rendering", "answer": "a", "explanation": "Subnet boundaries help control network access."},
+        {"question": "What helps prevent surprise bills? a) budgets alerts and tags b) bigger instances c) public access", "answer": "a", "explanation": "Cost guardrails catch spending changes before they grow."}
+      ]
+    },
+    {
+      "id": "capstone",
+      "level": "challenge",
+      "title": "End-to-end DevOps platform capstone",
+      "goal": "Combine tools into a portfolio-grade workflow from source code to monitored deployment.",
+      "challenge": "Ship a complete sample service with CI, image build, IaC, Kubernetes deployment, and observability notes.",
+      "tools": ["git", "docker", "docker-compose", "kubectl", "minikube", "helm", "terraform", "yq", "jq"],
+      "steps": [
+        "Pick a tiny service and make it run locally.",
+        "Containerize it and document build/run/debug commands.",
+        "Deploy it to Kubernetes with health checks.",
+        "Add CI validation and release notes.",
+        "Finish with architecture notes, runbook, rollback, and next improvements."
+      ],
+      "checkpoint": "Your project tells a complete story from code to deployment to operations.",
+      "validation": {
+        "required_tools": ["git", "docker"],
+        "required_files": ["README.md", "Dockerfile", "k8s/deployment.yaml", "docs/runbook.md"],
+        "optional_files": [".github/workflows/ci.yml", "terraform/main.tf"]
+      },
+      "xp": {"start": 10, "quiz": 25, "validate": 40, "complete": 90},
+      "badges": {"quiz": "quiz-capstone", "validate": "validated-capstone", "complete": "complete-capstone"},
+      "quiz": [
+        {"question": "What makes a capstone strong? a) integrated working workflow b) screenshots only c) no README", "answer": "a", "explanation": "A strong capstone shows a working path from code to operations."},
+        {"question": "What should rollback notes describe? a) how to return to a known good version b) how to delete history c) how to ignore alerts", "answer": "a", "explanation": "Rollback notes should be practical during pressure."},
+        {"question": "What should the portfolio README explain? a) architecture, commands, tradeoffs b) private secrets c) unrelated tasks", "answer": "a", "explanation": "A portfolio README should help reviewers understand design and operation."},
+        {"question": "Why include observability in the capstone? a) operations need signals after deploy b) it makes YAML shorter c) it replaces tests", "answer": "a", "explanation": "Deployment is not complete until you can observe and respond."}
+      ]
+    }
+  ]
+}

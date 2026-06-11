@@ -3,5 +3,6 @@
 *.sh text eol=lf
 devman.sh text eol=lf
 lib/*.sh text eol=lf
+content/** text eol=lf
 README.md text eol=lf
 registry.json text eol=lf

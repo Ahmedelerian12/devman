@@ -1,0 +1,13 @@
+name: Capstone CI
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shell files
+        run: find . -name "*.sh" -print0 | xargs -0 -r bash -n
+      - name: Docker build
+        run: docker build -t capstone-web:ci .
+      - name: Kubernetes manifest smoke check
+        run: test -f k8s/deployment.yaml && test -f k8s/service.yaml
